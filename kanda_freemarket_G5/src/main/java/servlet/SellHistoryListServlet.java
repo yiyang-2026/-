@@ -1,9 +1,8 @@
 package servlet;
 
-import java.io.IOException;
+import java.io.IOException; 
 import java.util.ArrayList;
 
-import dao.UserDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -17,12 +16,13 @@ import bean.Trade;
 import bean.User;
 import dao.ProductDAO;
 import dao.TradeDAO;
+import dao.UserDAO;
 import util.SendMail;
 
 //出品履歴一覧サーブレット
 
-@WebServlet("/sellHistryList")
-public class SellHistryListServlet extends HttpServlet {
+@WebServlet("/sellHistoryList")
+public class SellHistoryListServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
@@ -43,12 +43,10 @@ public class SellHistryListServlet extends HttpServlet {
 
 			//取得した出品履歴をListに追加して「sellhistory_list」としてリクエストスコープに格納する
 			request.setAttribute("sellhistory_list", list);
-			
-	
-
+					
 
 			//sellHistryList.jspにフォワードする
-			path = "/view/sellHistryList";
+			path = "/view/sellHistoryList";
 
 
 
@@ -69,7 +67,7 @@ public class SellHistryListServlet extends HttpServlet {
 			} else {
 
 				//sellHistryList.jspにフォワード
-				path = "/view/sellHistryList.jsp";
+				path = "/view/sellHistoryList.jsp";
 
 			}
 			request.getRequestDispatcher(path).forward(request, response);
