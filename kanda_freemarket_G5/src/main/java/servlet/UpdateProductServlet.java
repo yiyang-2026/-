@@ -223,6 +223,7 @@ public class UpdateProductServlet extends HttpServlet {
 
 			//Productオブジェクトに格納されたデータをデータベースに登録
 			productDao.update(product);
+			request.setAttribute("product", product);
 
 			//価格が数値以外の時
 		} catch (NumberFormatException e) {
