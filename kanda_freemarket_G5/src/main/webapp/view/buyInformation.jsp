@@ -6,10 +6,12 @@
 <%--購入情報 --%>
 
 <%
-//リクエストスコープのデータを取得する。
+//リクエストスコープから商品のデータを取得する。
 Product product = (Product) request.getAttribute("product");
-User user =(User) session.getAttribute("user");
 String error = (String) request.getAttribute("error");
+
+//セッションからユーザーのデータを取得する。
+User user = (User) session.getAttribute("user");
 
 MyFormat myFormat = new MyFormat();
 %>
@@ -32,29 +34,34 @@ MyFormat myFormat = new MyFormat();
 
 	</header>
 	<main>
-	<table>
-		<tr>
-			<th>支払い方法</th>
-			<td><%=user.getPaymentflag()%></td>
-			<th>商品代金</th>
-			<td><%=product.getSalesprice()%></td>
-			<th>配送先</th>
-			<td><%=user.getPostalCode()%> <%=user.getPrefecture()%> <%=user.getMunipulity()%>
-				<%=user.getHousenumber()%> <%=user.getBuildnumber()%></td>
+
+		<table>
+			<tr>
+				<th>支払い方法</th>
+				<td><%=user.getPaymentflag()%></td>
+				<th>商品代金</th>
+				<td><%=product.getSalesprice()%></td>
+				<th>配送先</th>
+				<td><%=user.getPostalCode()%> <%=user.getPrefecture()%> <%=user.getMunipulity()%>
+					<%=user.getHousenumber()%> <%=user.getBuildnumber()%></td>
 
 
-			<th>発送までの日数</th>
-			<td><%=product.getShippingdate()%></td>
+				<th>発送までの日数</th>
+				<td><%=product.getShippingdate()%></td>
 
-			<td>
-				<form action="<%=request.getContextPath()%>/buyConfirm" method="get">
-					<input type="hidden" name="userid" value="<%=user.getUserid()%>">
-					<input type="hidden" name="sellid" value="<%=product.getSellid()%>">
-					<input type="submit" value="購入情報を確認する">
-				</form>
-			</td>
-		</tr>
-</table>
+				<td>
+					<form action="<%=request.getContextPath()%>/buyInformation"
+						method="get">
+
+						<input type="hidden" name="userid" value="<%=user.getUserid()%>">
+						<input type="hidden" name="sellid"
+							value="<%=product.getSellid()%>"> 
+							
+						<input type="submit" value="購入確認へ">
+					</form>
+				</td>
+			</tr>
+		</table>
 
 		<table>
 			<tr>
