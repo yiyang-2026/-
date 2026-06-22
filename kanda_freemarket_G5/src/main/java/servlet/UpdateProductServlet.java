@@ -1,22 +1,29 @@
 package servlet;
 
-import java.io.IOException; 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 
 import bean.Product;
 import dao.ProductDAO;
 import bean.User;
-import dao.UserDAO;
 
 @WebServlet("/updateProduct")
 public class UpdateProductServlet extends HttpServlet {
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
 		String error = "";
@@ -27,110 +34,225 @@ public class UpdateProductServlet extends HttpServlet {
 			// 入力データの文字コードの指定
 			request.setCharacterEncoding("UTF-8");
 
+			//ProductDAOとProductオブジェクト生成
+			ProductDAO productDao = new ProductDAO();
+			Product product = new Product();
+
+			//セッションからuserを取得する
+			HttpSession session = request.getSession();
+			User user = (User) session.getAttribute("user");
+			if (user == null) {
+				error = "セッション切れの為、購入出来ません。";
+				cmd = "logout";
+				return;
+			}
+
 			//パラメータを取得する
-			
-			
-			//ユーザー管理ID
-			String userid = request.getParameter("userid");	
-			
-			
-			
-			//商品名
-			String productname = request.getParameter("productname");
-			
-			//カテゴリー
-			String category = request.getParameter("category");
-			
-			//商品価格
-			String salesprice = request.getParameter("salesprice");
-			
-			//写真
-			String photo = request.getParameter("photo");
-			
-			//商品状態
-			String condition = request.getParameter("condition");
-			
+
+			//sellidを取得する
+			String sellid = request.getParameter("sellid");
+			product.setSellid(sellid);
+
+			//配送料負担フラグ
+			String loadflag = request.getParameter("loadflag");
+
 			//配送方法
 			String shippingmethod = request.getParameter("shippingmethod");
-			
-			
-			//発送元の地域
-			String region = request.getParameter("prefecture");
-		
-			//商品説明
-			String description = request.getParameter("description");
-			
-			
-			//配送料負担（出品側or購入側）
-			String loadflag = request.getParameter("loadflag");
-			
-			
+
 			//発送までの日数
+
 			String shippingdays = request.getParameter("shippingdays");
-			
-			//商品のサイズ
+
+			//商品名
+			String productname = request.getParameter("productname");
+
+			//商品代金
+			String strsalesprice = request.getParameter("salesprice");
+
+			//商品紹介
+			String description = request.getParameter("description");
+
+			//商品状態
+			String condition = request.getParameter("icondition");
+
+			//カテゴリー
+			String category = request.getParameter("category");
+
+			//サイズ
 			String size = request.getParameter("size");
-			
-			
-			
-			//出品登録日時String sellInsertdate = request.getParameter("sellInsertdate");
-			//出品変更日時String sellUpdatedate = request.getParameter("sellUpdatedate");			
-			//購入日時String purchasedate = request.getParameter("purchasedate");
-			//発送日時String shippingdate = request.getParameter("shippingdate");			
-			//出品状態フラグString sellstateflag = request.getParameter("sellstateflag");
-			//入金フラグString paymentflag = request.getParameter("paymentflag");
-			//発送フラグString shippingflag = request.getParameter("shippingflag");
-			//配送料String shippingfee = request.getParameter("shippingfee");
-			
+
+			//写真
+			Part photo = request.getPart("image");
+
+			//更新日時
+			String sellUpdatedate = request.getParameter("sellUpdatedate");
 
 			// エラーチェック
-			if (title == null || title.equals("")) {
-				error = "タイトルが未入力の為、書籍更新処理は行えませんでした。";
+			if (productname == null || productname.equals("")) {
+				error = "商品名が未入力の為、出品更新はできませんでした。";
 				cmd = "list";
 				return;
 
 			}
-			if (strPrice == null || strPrice.equals("")) {
-				error = "価格が未入力の為、書籍更新処理は行えませんでした。";
+			if (strsalesprice == null || strsalesprice.equals("")) {
+				error = "販売価格が未入力の為、出品更新はできませんでした。";
 				cmd = "list";
 				return;
 
 			}
-			//価格の文字列を数字にする
-			int price;
-			price = Integer.parseInt(strPrice);
 
-			// BookDAOオブジェクト生成
-			BookDAO objDao = new BookDAO();
-
-			// 入力されたISBNの存在チェック
-			if (objDao.selectByIsbn(isbn).getIsbn() == null) {
-				error = "更新対象が存在しない為、書籍更新処理は行えませんでした。";
+			if (description == null || description.equals("")) {
+				error = "商品説明が未入力の為、出品更新はできませんでした。";
 				cmd = "list";
+				return;
+
+			}
+			if (category == null || category.equals("")) {
+				error = "商品カテゴリーが未入力の為、出品更新はできませんでした。";
+				cmd = "list";
+				return;
+
+			}
+			if (size == null || size.equals("")) {
+				error = "商品サイズが未入力の為、出品更新はできませんでした。";
+				cmd = "list";
+				return;
+
+			}
+			if (shippingmethod == null || shippingmethod.equals("")) {
+				error = "配送方法が未入力の為、出品更新はできませんでした。";
+				cmd = "list";
+				return;
+
+			}
+
+			//ファイル未選択時
+			if (photo == null || photo.getSize() == 0) {
+
+				//データを登録
+				error = "ファイルが未選択です。";
+				cmd = "list";
+				path = "/view/error.jsp";
+
+				//終了
 				return;
 			}
 
-			// Bookのオブジェクトを生成し、isbn,title,priceを設定する。
-			Book book = new Book();
-			book.setIsbn(isbn);
-			book.setTitle(title);
-			book.setPrice(price);
+			// アップロードされたファイルの種類を取得する
+			String contentType = photo.getContentType();
 
-			// 書籍を更新するメソッド
-			objDao.update(book);
+			// 元のファイル名を取得する
+			String originalFileName = photo.getSubmittedFileName();
+			//ファイル未選択時
+			if (originalFileName == null || originalFileName.isEmpty()) {
 
+				//データを登録
+				error = "ファイル名が不正です。";
+				cmd = "list";
+				path = "/view/error.jsp";
+
+				//終了
+				return;
+			}
+
+			// 拡張子を取得する
+			String extension = getExtension(originalFileName);
+
+			if (!isAllowedExtension(extension)) {
+				//データを登録
+				error = "その拡張子は使えません。";
+				cmd = "list";
+				path = "/view/error.jsp";
+
+				//終了
+				return;
+			}
+
+			String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss"));
+			/*
+			 * 元のファイル名だけを取り出す。
+			 * パス情報が混ざっていても、ファイル名部分だけを使う。
+			 */
+
+			String safeFileName = Path.of(originalFileName).getFileName().toString();
+
+			String saveFileName = now + "_" + safeFileName;
+			/*
+			 * webapp/image フォルダの実際の保存先パスを取得する。
+			 */
+			String uploadPath = getServletContext().getRealPath("/image");
+
+			Path uploadDir = Path.of(uploadPath);
+
+			// imageフォルダが存在しない場合は作成する
+			if (!Files.exists(uploadDir)) {
+				Files.createDirectories(uploadDir);
+			}
+
+			// 保存先ファイルのパスを作成する
+			Path savePath = uploadDir.resolve(saveFileName);
+
+			// アップロードされたファイルを保存する
+			try (InputStream inputStream = photo.getInputStream()) {
+				Files.copy(inputStream, savePath);
+			} catch (FileAlreadyExistsException e) {
+				error = "同名ファイルが既に存在します。";
+				cmd = "list";
+				path = "/view/error.jsp";
+				return;
+			} catch (IOException e) {
+				error = "ファイル保存ができません。";
+				cmd = "list";
+				path = "/view/error.jsp";
+				return;
+			}
+
+			//Productオブジェクトに格納
+
+			product.setLoadflag(loadflag);
+			product.setShippingmethod(shippingmethod);
+			product.setShippingdays(shippingdays);
+			product.setProductname(productname);
+			product.setSalesprice(Integer.parseInt(strsalesprice));
+			product.setDescription(description);
+			product.setCondition(condition);
+			product.setCategory(category);
+			product.setSize(size);
+			product.setPhoto(saveFileName);
+			product.setSellUpdatedate(sellUpdatedate);
+
+			//Productオブジェクトに格納されたデータをデータベースに登録
+			productDao.update(product);
+
+			//価格が数値以外の時
 		} catch (NumberFormatException e) {
-			error = "価格の値が不正の為、書籍更新処理は行えませんでした。";
+
+			//データを登録
+			error = "価格の値が不正の為、出品変更処理は行えませんでした。";
 			cmd = "list";
+			path = "/view/error.jsp";
+
+			//終了
+			return;
 
 		} catch (IllegalStateException e) {
-			error = "DB接続エラーの為、書籍更新処理は行えませんでした。";
-			cmd = "logout";
-		} finally {
 
+			//データを登録
+			error = "DB接続エラーの為、出品変更処理は行えませんでした。";
+			cmd = "logout";
+			path = "/view/error.jsp";
+
+		} catch (Exception e) {
+
+			//データを共有
+			error = "エラー";
+			cmd = "logout";
+			path = "/view/error.jsp";
+		} finally {
+			//
 			if (error.equals("")) {
 				// エラーが無い場合はListServletにフォワード
-				path = "/list";
+				path = "/view/updateConfirm.jsp";
 
 			} else {
 				// エラーが有る場合はerror.jspにフォワードする
@@ -140,6 +262,27 @@ public class UpdateProductServlet extends HttpServlet {
 			}
 			request.getRequestDispatcher(path).forward(request, response);
 		}
+
+	}
+
+	/**
+	 * ファイル名から拡張子を取得する
+	 */
+	private String getExtension(String fileName) {
+		int dotIndex = fileName.lastIndexOf(".");
+
+		if (dotIndex == -1) {
+			return "";
+		}
+
+		return fileName.substring(dotIndex).toLowerCase();
+	}
+
+	private boolean isAllowedExtension(String extension) {
+		return extension.equals(".jpg")
+				|| extension.equals(".jpeg")
+				|| extension.equals(".png")
+				|| extension.equals(".gif");
 	}
 
 }
