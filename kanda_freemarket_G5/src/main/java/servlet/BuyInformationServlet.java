@@ -1,6 +1,6 @@
 package servlet;
 
-import java.io.IOException;
+import java.io.IOException; 
 import java.util.ArrayList;
 
 import jakarta.servlet.ServletException;
@@ -43,7 +43,7 @@ public class BuyInformationServlet extends HttpServlet {
 				return;
 			}
 
-
+			//buyInformation.jspからsellidを取得する
 			String sellid = request.getParameter("sellid");
 			ProductDAO productdao = new ProductDAO();
 			Product product = productdao.selectBySellid(sellid);
@@ -51,7 +51,6 @@ public class BuyInformationServlet extends HttpServlet {
 			//取得したBookをListに追加して「book_list」としてリクエストスコープに格納する
 			request.setAttribute("product", product);
 
-			//メール
 
 			//商品購入したらメールで送信する
 			//text:本文　name：ユーザー名　mail：メールアドレス total:合計金額
@@ -60,7 +59,7 @@ public class BuyInformationServlet extends HttpServlet {
 			String mail = "";
 			int salesprice = 0;
 
-			purchaser = user.getUserid();
+			purchaser = user.getNickname();
 			productname = product.getProductname();
 			mail = user.getMail();
 			salesprice = product.getSalesprice();
